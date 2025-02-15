@@ -1,0 +1,10 @@
+**/__pycache__/
+.env
+firebase_service_account.json
+
+chrome_driver/*
+!chrome_driver/readMe.txt
+
+venv/
+
+/.vscode

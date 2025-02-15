@@ -1,0 +1,5 @@
+selenium==4.23.1
+webdriver-manager==4.0.2
+Jinja2==3.1.4
+python-dotenv==1.0.1
+psutil==6.0.0
