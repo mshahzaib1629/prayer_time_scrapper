@@ -129,16 +129,10 @@ def _select_month(driver: WebDriver, month_index, wait: WebDriverWait):
         month_button.click()
         wait.until(EC.staleness_of(month_button))
         
-        print("MONTH SELECTED for ", months_grid[month_index])        
-        
-        return True
     except Exception as e:
         print(f"An error occurred while selecting month: {e}")
-        return False
 
-def scrap_prayer_timing_page():
-    
-    city_name = "Peshawar Pakistan"
+def scrap_prayer_timing_page(city_name: str):
     
     url = "https://prayer-times.muslimpro.com/en/find?country_code=PK&country_name=Pakistan&city_name=Lahore&coordinates=31.5203696,74.35874729999999"
     driver = _setup_driver()

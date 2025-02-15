@@ -16,7 +16,7 @@ def main():
     memory_usage_before = python_process.memory_info().rss / (1024 * 1024)
 
     # execute code
-    app = App()
+    app = App(CITY_NAME)
     app.get_namaz_timings()
     
     # Stop the timer
@@ -32,6 +32,9 @@ def main():
     # print(f"Memory usage before: {memory_usage_before:.2f} MB")
     # print(f"Memory usage after: {memory_usage_after:.2f} MB")
     print(f"Memory used: {memory_usage_after - memory_usage_before:.2f} MB")
+
+
+CITY_NAME="Karachi"
 
 if __name__ == "__main__":
     main()

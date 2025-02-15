@@ -7,4 +7,6 @@ chrome_driver/*
 
 venv/
 
-/.vscode
+.vscode/
+sample/
+outputs/
