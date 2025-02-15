@@ -73,8 +73,9 @@ def _scrape_table_data(driver: WebDriver, wait: WebDriverWait, headers):
     for row_element in row_elements:
         cell_elements = row_element.find_elements(By.TAG_NAME, "td")
         row_data = {headers[i]: cell.text.strip() for i, cell in enumerate(cell_elements)}
- 
-        table_data.append(row_data)
+
+        if row_data:
+            table_data.append(row_data)
     
     return table_data
 
