@@ -34,7 +34,7 @@ def main():
     print(f"Memory used: {memory_usage_after - memory_usage_before:.2f} MB")
 
 
-CITY_NAME="Karachi"
+CITY_NAME=os.getenv("CITY_NAME")
 
 if __name__ == "__main__":
     main()

@@ -19,27 +19,36 @@ class App:
         
     def _write_to_excel(self):
         wb = Workbook()
+        sheet = wb.active
+        sheet.title = self.city_name
+        
+        odd_start_row = 1   # Starting row for odd months
+        even_start_row = 38  # Starting row for even months
+        columns_per_month = 9  # Number of columns each month's data takes
         
         for month_index, data in sorted(self.month_data.items()):
             month_name = month_names[month_index]
-            if month_name == "January":
-                sheet = wb.active
-                sheet.title = month_name
-            else:
-                sheet = wb.create_sheet(month_name)
+            is_odd_month = month_index % 2 == 1
+            
+            # Calculate starting positions
+            month_position = (month_index + 1) // 2 - 1  # 0-based position for horizontal layout
+            start_col = month_position * columns_per_month + 1  # Convert to 1-based column index
+            current_row = odd_start_row if is_odd_month else even_start_row
             
             # Write month name as header
-            sheet['A1'] = month_name
+            sheet.cell(row=current_row, column=start_col, value=month_name)
             
-            # Write column headers
+            # Write column headers and data
             headers = list(data[0].keys())
-            for col, header in enumerate(headers, 1):
-                sheet.cell(row=3, column=col, value=header)
+            for col, header in enumerate(headers, 0):
+                sheet.cell(row=current_row + 1, column=start_col + col, value=header)
             
             # Write data rows
-            for row, entry in enumerate(data, 4):
-                for col, key in enumerate(headers, 1):
-                    sheet.cell(row=row, column=col, value=entry[key])
+            for row_offset, entry in enumerate(data, 2):
+                for col, key in enumerate(headers, 0):
+                    sheet.cell(row=current_row + row_offset, 
+                             column=start_col + col, 
+                             value=entry[key])
         
         wb.save(self.excel_path)
     
