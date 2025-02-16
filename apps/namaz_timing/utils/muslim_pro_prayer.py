@@ -68,10 +68,16 @@ def _set_city(driver: WebDriver, wait: WebDriverWait, city_name: str):
         search_input.send_keys(city_name)
         
         first_element_ref = "//div[@class='pac-container pac-logo hdpi']/div[@class='pac-item'][1]"
+        wait.until(EC.visibility_of_element_located((By.XPATH, first_element_ref)))
         first_dropdown_item = wait.until(EC.element_to_be_clickable((By.XPATH, first_element_ref)))
         first_dropdown_item.click()
+        # Wait for the URL to change after the city is set
+        current_url = driver.current_url
+        wait.until(lambda driver: driver.current_url != current_url)
+        
     except Exception as e:
         print("Error in _set_city: ", e)
+        raise e
     
     
 def _set_first_month(driver: WebDriver, wait: WebDriverWait):
@@ -137,7 +143,6 @@ def _scrape_table_data(driver: WebDriver, wait: WebDriverWait, headers):
                     "Isha": row_data["Isha'a"]
                 }
                 
-                print(data)
                 table_data.append(data)
         
         return table_data
@@ -212,6 +217,9 @@ def scrap_prayer_timing_page(city_name: str):
         
         _apply_ad_blocker(driver, wait)
         
+        _remove_overlay_ads(driver, wait)
+        _remove_ad_frames(driver, wait)
+        
         _set_city(driver, wait, city_name)
 
         _set_first_month(driver, wait)
@@ -219,20 +227,24 @@ def scrap_prayer_timing_page(city_name: str):
         month_index = 1
         headers = _get_table_headers(driver, wait)
         
-        while month_index <= 3:
+        while month_index <= 12:
             
+            _apply_ad_blocker(driver, wait)
             _remove_overlay_ads(driver, wait)
             _remove_ad_frames(driver, wait)
             
             _select_month(driver, month_index, wait)
             
+            location_name = driver.find_element(By.XPATH, "//ul[@class='prayer-date list-unstyled d-flex']/li[@class='ml-md-5']/h2[@class='mb-0']/span").text
+            month_name = driver.find_element(By.XPATH, "//span[@class='display-month mr-4']").text
+            
             table_data = _scrape_table_data(driver, wait, headers)
             
             if table_data:
-                print(f"Found {len(table_data)} rows in {month_names[month_index]}.")
+                print(f"Found {len(table_data)} rows in {location_name} / {month_name}.")
                 yield month_index, table_data
             else:
-                print(f"No rows found in {month_names[month_index]}.")
+                print(f"No rows found in {location_name} / {month_name}.")
                 
             month_index += 1
 
