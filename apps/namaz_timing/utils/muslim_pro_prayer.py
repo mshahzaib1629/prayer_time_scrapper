@@ -20,16 +20,16 @@ def _find_project_root(current_path, marker_files=('.git', 'setup.py', 'requirem
 
 def _setup_driver() -> WebDriver:
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-
+    ad_block_extension_file_name = os.getenv("AD_BLOCKER_EXTENSION_FILE_NAME")
+    print("Ad block extension: ", ad_block_extension_file_name)
     driver_file_name = os.getenv("CHROME_DRIVER_FILE_NAME")
-    ad_blocker_extentsion = os.getenv("AD_BLOCKER_EXTENSION_FILE_NAME")
     current_file_path = os.path.dirname(os.path.abspath(__file__))
     project_root_path = _find_project_root(current_file_path)
     
-    chrome_options.add_extension(os.path.join(project_root_path, 'chrome_extensions', ad_blocker_extentsion)) 
+    chrome_options.add_extension(os.path.join(project_root_path, 'chrome_extensions', ad_block_extension_file_name)) 
     
     chrome_driver_path = os.path.join(project_root_path, 'chrome_driver', driver_file_name)
     
@@ -60,46 +60,90 @@ def _apply_ad_blocker(driver: WebDriver, wait: WebDriverWait):
         """)
 
 def _set_city(driver: WebDriver, wait: WebDriverWait, city_name: str):
-    
-    city_input_ref = "//input[@id='searchPrayerArea']"
-    search_input = wait.until(EC.element_to_be_clickable((By.XPATH, city_input_ref)))
-    search_input.clear()
-    search_input.send_keys(city_name)
-    
-    first_element_ref = "//div[@class='pac-container pac-logo hdpi']/div[@class='pac-item'][1]"
-    first_dropdown_item = wait.until(EC.element_to_be_clickable((By.XPATH, first_element_ref)))
-    first_dropdown_item.click()
+    try:
+        
+        city_input_ref = "//input[@id='searchPrayerArea']"
+        search_input = wait.until(EC.element_to_be_clickable((By.XPATH, city_input_ref)))
+        search_input.clear()
+        search_input.send_keys(city_name)
+        
+        first_element_ref = "//div[@class='pac-container pac-logo hdpi']/div[@class='pac-item'][1]"
+        first_dropdown_item = wait.until(EC.element_to_be_clickable((By.XPATH, first_element_ref)))
+        first_dropdown_item.click()
+    except Exception as e:
+        print("Error in _set_city: ", e)
     
     
 def _set_first_month(driver: WebDriver, wait: WebDriverWait):
-    # Modify the URL to include the fixed date
-    current_url = driver.current_url
-    if "date=" in current_url:
-        base_url, query_params = current_url.split("date=")
-        new_url = f"{base_url}date=2025-01&{query_params.split('&', 1)[1]}"
-    else:
-        new_url = f"{current_url}&date=2025-01"
-    
-    driver.get(new_url)
+    try:
+        # Modify the URL to include the fixed date
+        current_url = driver.current_url
+        if "date=" in current_url:
+            base_url, query_params = current_url.split("date=")
+            new_url = f"{base_url}date=2025-01&{query_params.split('&', 1)[1]}"
+        else:
+            new_url = f"{current_url}&date=2025-01"
+        
+        driver.get(new_url)
+    except Exception as e:
+        print("Error in _set_first_month: ", e)
 
 def _get_table_headers(driver: WebDriver, wait: WebDriverWait):
-    header_elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//table[@class='prayer-times']/tbody/tr[@class='p-2 text-center']/th")))
-    headers = [header.text.strip() for header in header_elements]
-    headers[0] = "Date"
-    return headers
+    try:
+        header_elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//table[@class='prayer-times']/tbody/tr[@class='p-2 text-center']/th")))
+        headers = [header.text.strip() for header in header_elements]
+        headers[0] = "Date"
+        return headers
+    except Exception as e:
+        print("Error occured in __get_table_headers: ", e)
+
+
+
+def _format_date(date_str):
+    # Remove any extra quotes
+    date_str = date_str.strip("'")
+
+    # Split input (e.g., "Wed 1 Jan" → ["Wed", "1", "Jan"])
+    day_of_week, day, month = date_str.split()
+
+    # Get current year dynamically
+    current_year = datetime.now().year
+
+    # Add ordinal suffix to the day
+    suffix = "th" if 11 <= int(day) <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(int(day) % 10, "th")
+    formatted_day = f"{int(day)}{suffix}"
+
+    # Format output: "1st Jan 2025 Wed"
+    return f"{formatted_day} {month} {current_year} {day_of_week}"
 
 def _scrape_table_data(driver: WebDriver, wait: WebDriverWait, headers):
-    row_elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//table[@class='prayer-times']/tbody/tr")))
-    table_data = []
+    try:
+        row_elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//table[@class='prayer-times']/tbody/tr")))
+        table_data = []
 
-    for row_element in row_elements:
-        cell_elements = row_element.find_elements(By.TAG_NAME, "td")
-        row_data = {headers[i]: cell.text.strip() for i, cell in enumerate(cell_elements)}
+        for row_element in row_elements:
+            cell_elements = row_element.find_elements(By.TAG_NAME, "td")
+            row_data = {headers[i]: cell.text.strip() for i, cell in enumerate(cell_elements)}
 
-        if row_data:
-            table_data.append(row_data)
-    
-    return table_data
+            if row_data:
+               
+                data = {
+                    "Date": _format_date(row_data["Date"]),
+                    "Fajr": row_data["Fajr"],
+                    "Sunrise": row_data["Sunrise"],
+                    "Dhuhr": row_data["Dhuhr"],
+                    "Asr": row_data["Asr"],
+                    "Maghrib": row_data["Maghrib"],
+                    "Isha": row_data["Isha'a"]
+                }
+                
+                print(data)
+                table_data.append(data)
+        
+        return table_data
+    except Exception as e:
+        print(f"An error occurred while scraping table data: {e}")
+        return None
 
 def _close_overlay_if_present(driver: WebDriver, wait: WebDriverWait):
     try:
@@ -172,10 +216,10 @@ def scrap_prayer_timing_page(city_name: str):
 
         _set_first_month(driver, wait)
         
-        headers = _get_table_headers(driver, wait)
         month_index = 1
+        headers = _get_table_headers(driver, wait)
         
-        while month_index <= 12:
+        while month_index <= 3:
             
             _remove_overlay_ads(driver, wait)
             _remove_ad_frames(driver, wait)
