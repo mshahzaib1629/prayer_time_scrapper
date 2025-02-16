@@ -3,6 +3,7 @@ from openpyxl import Workbook
 from apps.namaz_timing.utils.muslim_pro_prayer import scrap_prayer_timing_page
 from apps.namaz_timing.utils.constants import month_names
 import os
+from openpyxl.styles import Font
 
 class App:
     def __init__(self, city_name):
@@ -36,7 +37,8 @@ class App:
             current_row = odd_start_row if is_odd_month else even_start_row
             
             # Write month name as header
-            sheet.cell(row=current_row, column=start_col, value=month_name)
+            bold_font = Font(bold=True)
+            sheet.cell(row=current_row, column=start_col, value=month_name).font = bold_font
             
             # Write column headers and data
             headers = list(data[0].keys())

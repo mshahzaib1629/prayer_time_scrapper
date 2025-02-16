@@ -5,6 +5,9 @@ firebase_service_account.json
 chrome_driver/*
 !chrome_driver/readMe.txt
 
+chrome_extensions/*
+!chrome_extensions/readMe.txt
+
 venv/
 
 .vscode/

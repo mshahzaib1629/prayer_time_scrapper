@@ -25,8 +25,12 @@ def _setup_driver() -> WebDriver:
     chrome_options.add_argument("--disable-dev-shm-usage")
 
     driver_file_name = os.getenv("CHROME_DRIVER_FILE_NAME")
+    ad_blocker_extentsion = os.getenv("AD_BLOCKER_EXTENSION_FILE_NAME")
     current_file_path = os.path.dirname(os.path.abspath(__file__))
     project_root_path = _find_project_root(current_file_path)
+    
+    chrome_options.add_extension(os.path.join(project_root_path, 'chrome_extensions', ad_blocker_extentsion)) 
+    
     chrome_driver_path = os.path.join(project_root_path, 'chrome_driver', driver_file_name)
     
     if driver_file_name and os.path.exists(chrome_driver_path):
@@ -48,17 +52,35 @@ def _handle_iframes(driver: WebDriver):
         print(f"Closed {len(iframes)} iframes and returned to the main content.")
     except Exception as e:
         print(f"Error while handling iframes: {e}")
+        
+def _apply_ad_blocker(driver: WebDriver, wait: WebDriverWait):
+    driver.execute_script("""
+            var ads = document.querySelectorAll('iframe, .ad, .advertisement, .adsbox');
+            ads.forEach(ad => ad.remove());
+        """)
 
 def _set_city(driver: WebDriver, wait: WebDriverWait, city_name: str):
     
     city_input_ref = "//input[@id='searchPrayerArea']"
-    search_input = wait.until(EC.presence_of_element_located((By.XPATH, city_input_ref)))
+    search_input = wait.until(EC.element_to_be_clickable((By.XPATH, city_input_ref)))
     search_input.clear()
     search_input.send_keys(city_name)
     
     first_element_ref = "//div[@class='pac-container pac-logo hdpi']/div[@class='pac-item'][1]"
-    first_dropdown_item = wait.until(EC.presence_of_element_located((By.XPATH, first_element_ref)))
+    first_dropdown_item = wait.until(EC.element_to_be_clickable((By.XPATH, first_element_ref)))
     first_dropdown_item.click()
+    
+    
+def _set_first_month(driver: WebDriver, wait: WebDriverWait):
+    # Modify the URL to include the fixed date
+    current_url = driver.current_url
+    if "date=" in current_url:
+        base_url, query_params = current_url.split("date=")
+        new_url = f"{base_url}date=2025-01&{query_params.split('&', 1)[1]}"
+    else:
+        new_url = f"{current_url}&date=2025-01"
+    
+    driver.get(new_url)
 
 def _get_table_headers(driver: WebDriver, wait: WebDriverWait):
     header_elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//table[@class='prayer-times']/tbody/tr[@class='p-2 text-center']/th")))
@@ -125,7 +147,7 @@ def _select_month(driver: WebDriver, month_index, wait: WebDriverWait):
         month_selection_button = wait.until(EC.element_to_be_clickable((By.XPATH, month_selection_button_path)))
         month_selection_button.click()
         
-        month_button = wait.until(EC.presence_of_element_located((By.XPATH, month_button_path)))
+        month_button = wait.until(EC.element_to_be_clickable((By.XPATH, month_button_path)))
         month_button.click()
         wait.until(EC.staleness_of(month_button))
         
@@ -144,7 +166,11 @@ def scrap_prayer_timing_page(city_name: str):
     try: 
         _close_overlay_if_present(driver, wait)
         
+        _apply_ad_blocker(driver, wait)
+        
         _set_city(driver, wait, city_name)
+
+        _set_first_month(driver, wait)
         
         headers = _get_table_headers(driver, wait)
         month_index = 1

@@ -3,6 +3,8 @@ import os
 import psutil
 
 from apps.namaz_timing.app import App
+import sys
+import argparse
 
 def main():
     # Start the timer
@@ -33,8 +35,11 @@ def main():
     # print(f"Memory usage after: {memory_usage_after:.2f} MB")
     print(f"Memory used: {memory_usage_after - memory_usage_before:.2f} MB")
 
-
-CITY_NAME=os.getenv("CITY_NAME")
-
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Get Namaz timings for a city.')
+    parser.add_argument('--city', type=str, required=True, help='Name of the city to get Namaz timings for')
+    args = parser.parse_args()
+
+    CITY_NAME = args.city
+    print("City Name: ", CITY_NAME)
     main()
