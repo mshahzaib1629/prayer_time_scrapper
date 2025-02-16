@@ -34,6 +34,7 @@ class App:
         # Write column headers
         for col, header in enumerate(headers, 1):
             sheet.cell(row=current_row, column=col, value=header)
+            sheet.column_dimensions[sheet.cell(row=current_row, column=col).column_letter].width = 17
         
         # Write all months' data
         current_row = 2  # Start data from second row

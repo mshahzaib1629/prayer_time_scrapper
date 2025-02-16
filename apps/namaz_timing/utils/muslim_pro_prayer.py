@@ -20,7 +20,7 @@ def _find_project_root(current_path, marker_files=('.git', 'setup.py', 'requirem
 
 def _setup_driver() -> WebDriver:
     chrome_options = Options()
-    # chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     ad_block_extension_file_name = os.getenv("AD_BLOCKER_EXTENSION_FILE_NAME")
@@ -122,6 +122,16 @@ def _format_date(date_str):
     # Format output: "1st Jan 2025 Wed"
     return f"{formatted_day} {month} {current_year} {day_of_week}"
 
+def _convert_to_12h_format(time_str):
+    try:
+        # Convert the string to a datetime object
+        time_obj = datetime.strptime(time_str, "%H:%M")
+        # Format the datetime object to a 12-hour time string with AM/PM
+        return time_obj.strftime("%I:%M %p")
+    except ValueError as e:
+        print(f"Error converting time: {e}")
+        return time_str
+
 def _scrape_table_data(driver: WebDriver, wait: WebDriverWait, headers):
     try:
         row_elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//table[@class='prayer-times']/tbody/tr")))
@@ -135,12 +145,12 @@ def _scrape_table_data(driver: WebDriver, wait: WebDriverWait, headers):
                
                 data = {
                     "Date": _format_date(row_data["Date"]),
-                    "Fajr": row_data["Fajr"],
-                    "Sunrise": row_data["Sunrise"],
-                    "Dhuhr": row_data["Dhuhr"],
-                    "Asr": row_data["Asr"],
-                    "Maghrib": row_data["Maghrib"],
-                    "Isha": row_data["Isha'a"]
+                    "Fajr": _convert_to_12h_format(row_data["Fajr"]),
+                    "Sunrise": _convert_to_12h_format(row_data["Sunrise"]),
+                    "Dhuhr": _convert_to_12h_format(row_data["Dhuhr"]),
+                    "Asr": _convert_to_12h_format(row_data["Asr"]),
+                    "Maghrib": _convert_to_12h_format(row_data["Maghrib"]),
+                    "Isha": _convert_to_12h_format(row_data["Isha'a"])
                 }
                 
                 table_data.append(data)
