@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.options import Options
 from datetime import datetime, timezone
 from apps.namaz_timing.utils.constants import months_grid, month_names
 import os
+import time
 
 def _find_project_root(current_path, marker_files=('.git', 'setup.py', 'requirements.txt')):
     while current_path != os.path.dirname(current_path):
@@ -23,13 +24,10 @@ def _setup_driver() -> WebDriver:
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    ad_block_extension_file_name = os.getenv("AD_BLOCKER_EXTENSION_FILE_NAME")
-    print("Ad block extension: ", ad_block_extension_file_name)
+    
     driver_file_name = os.getenv("CHROME_DRIVER_FILE_NAME")
     current_file_path = os.path.dirname(os.path.abspath(__file__))
     project_root_path = _find_project_root(current_file_path)
-    
-    chrome_options.add_extension(os.path.join(project_root_path, 'chrome_extensions', ad_block_extension_file_name)) 
     
     chrome_driver_path = os.path.join(project_root_path, 'chrome_driver', driver_file_name)
     
@@ -52,12 +50,6 @@ def _handle_iframes(driver: WebDriver):
         print(f"Closed {len(iframes)} iframes and returned to the main content.")
     except Exception as e:
         print(f"Error while handling iframes: {e}")
-        
-def _apply_ad_blocker(driver: WebDriver, wait: WebDriverWait):
-    driver.execute_script("""
-            var ads = document.querySelectorAll('iframe, .ad, .advertisement, .adsbox');
-            ads.forEach(ad => ad.remove());
-        """)
 
 def _set_city(driver: WebDriver, wait: WebDriverWait, city_name: str):
     try:
@@ -67,13 +59,24 @@ def _set_city(driver: WebDriver, wait: WebDriverWait, city_name: str):
         search_input.clear()
         search_input.send_keys(city_name)
         
+        print("City name entered!")
+        
+        _remove_ads(driver, wait)
         first_element_ref = "//div[@class='pac-container pac-logo hdpi']/div[@class='pac-item'][1]"
         wait.until(EC.visibility_of_element_located((By.XPATH, first_element_ref)))
+        
+        print("City Suggestion List appeared!")
+        
+        _remove_ads(driver, wait)
         first_dropdown_item = wait.until(EC.element_to_be_clickable((By.XPATH, first_element_ref)))
+        
+        print("Dropdown item found!")
+        
         first_dropdown_item.click()
-        # Wait for the URL to change after the city is set
-        current_url = driver.current_url
-        wait.until(lambda driver: driver.current_url != current_url)
+        
+        print("Dropdown item clicked!")
+
+        wait.until(EC.presence_of_element_located((By.XPATH, "//table[@class='prayer-times']")))
         
     except Exception as e:
         print("Error in _set_city: ", e)
@@ -168,34 +171,6 @@ def _close_overlay_if_present(driver: WebDriver, wait: WebDriverWait):
     except:
         print("Overlay not found or already closed.")
 
-def _remove_overlay_ads(driver: WebDriver, wait: WebDriverWait):
-    try:
-        ad_path = "//*[starts-with(@id, 'gpt_unit_')]"
-        ads = driver.find_elements(By.XPATH, ad_path)
-        
-        for element in ads:
-            driver.execute_script("""
-            var element = arguments[0];
-            element.parentNode.removeChild(element);
-            """, element)
-            print(f"Removed element with id: {element.get_attribute('id')}")
-    except:
-        print("Ad not found")
-        
-def _remove_ad_frames(driver: WebDriver, wait: WebDriverWait):
-    try:
-        ad_path = "//*[starts-with(@id, 'google_ads_iframe_')]"
-        ads = driver.find_elements(By.XPATH, ad_path)
-        
-        for element in ads:
-            driver.execute_script("""
-            var element = arguments[0];
-            element.parentNode.removeChild(element);
-            """, element)
-            print(f"Removed element with id: {element.get_attribute('id')}")
-    except:
-        print("Ad not found")
-
 def _select_month(driver: WebDriver, month_index, wait: WebDriverWait):
     try:
 
@@ -206,12 +181,29 @@ def _select_month(driver: WebDriver, month_index, wait: WebDriverWait):
         month_selection_button = wait.until(EC.element_to_be_clickable((By.XPATH, month_selection_button_path)))
         month_selection_button.click()
         
+        _remove_ads(driver, wait)
         month_button = wait.until(EC.element_to_be_clickable((By.XPATH, month_button_path)))
         month_button.click()
         wait.until(EC.staleness_of(month_button))
         
     except Exception as e:
         print(f"An error occurred while selecting month: {e}")
+
+
+def _remove_ads(driver: WebDriver, wait: WebDriverWait):
+    try:
+        time.sleep(3)  # Wait for a few seconds to allow ad items to load
+        ads_removed = driver.execute_script("""
+            var ads = document.querySelectorAll('iframe, .ad, .advertisement, .adsbox');
+            ads.forEach(ad => ad.remove());
+            var gpt_ads = document.querySelectorAll('[id^="gpt_unit_"]');
+            gpt_ads.forEach(ad => ad.remove());
+            return ads.length + gpt_ads.length;
+        """)
+        print(f"Ad blocker applied. Removed {ads_removed} ads.")
+    except Exception as e:
+        print("Error in _apply_ad_blocker: ", e)
+    
 
 def scrap_prayer_timing_page(city_name: str):
     
@@ -225,10 +217,7 @@ def scrap_prayer_timing_page(city_name: str):
     try: 
         _close_overlay_if_present(driver, wait)
         
-        _apply_ad_blocker(driver, wait)
-        
-        _remove_overlay_ads(driver, wait)
-        _remove_ad_frames(driver, wait)
+        _remove_ads(driver, wait)
         
         _set_city(driver, wait, city_name)
 
@@ -239,9 +228,7 @@ def scrap_prayer_timing_page(city_name: str):
         
         while month_index <= 12:
             
-            _apply_ad_blocker(driver, wait)
-            _remove_overlay_ads(driver, wait)
-            _remove_ad_frames(driver, wait)
+            _remove_ads(driver, wait)
             
             _select_month(driver, month_index, wait)
             
