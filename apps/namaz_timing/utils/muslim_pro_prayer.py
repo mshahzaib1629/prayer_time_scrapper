@@ -24,7 +24,15 @@ def _setup_driver() -> WebDriver:
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+
+    chrome_options.add_argument("--disable-gpu")
+    # chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--disable-notifications")
+    chrome_options.add_argument("--disable-popup-blocking")
+    # chrome_options.add_argument("--start-maximized")
     
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
     driver_file_name = os.getenv("CHROME_DRIVER_FILE_NAME")
     current_file_path = os.path.dirname(os.path.abspath(__file__))
     project_root_path = _find_project_root(current_file_path)
@@ -76,7 +84,7 @@ def _set_city(driver: WebDriver, wait: WebDriverWait, city_name: str):
         
         print("Dropdown item clicked!")
 
-        wait.until(EC.presence_of_element_located((By.XPATH, "//table[@class='prayer-times']")))
+        # wait.until(EC.presence_of_element_located((By.XPATH, "//table[@class='prayer-times']")))
         
     except Exception as e:
         print("Error in _set_city: ", e)
@@ -177,14 +185,14 @@ def _select_month(driver: WebDriver, month_index, wait: WebDriverWait):
         month_selection_button_path = "//div[@class='calender-div h-100 d-flex align-items-center p-3']/i"
         month_button_path = f"//table[@class='month-picker-month-table']/tbody/tr[{months_grid[month_index][0]}]/td[{months_grid[month_index][1]}]"
         
-        wait.until(EC.presence_of_element_located((By.XPATH, month_selection_button_path)))
+        # wait.until(EC.presence_of_element_located((By.XPATH, month_selection_button_path)))
         month_selection_button = wait.until(EC.element_to_be_clickable((By.XPATH, month_selection_button_path)))
         month_selection_button.click()
         
         _remove_ads(driver, wait)
         month_button = wait.until(EC.element_to_be_clickable((By.XPATH, month_button_path)))
         month_button.click()
-        wait.until(EC.staleness_of(month_button))
+        # wait.until(EC.staleness_of(month_button))
         
     except Exception as e:
         print(f"An error occurred while selecting month: {e}")
@@ -192,7 +200,7 @@ def _select_month(driver: WebDriver, month_index, wait: WebDriverWait):
 
 def _remove_ads(driver: WebDriver, wait: WebDriverWait):
     try:
-        time.sleep(3)  # Wait for a few seconds to allow ad items to load
+        time.sleep(6)  # Wait for a few seconds to allow ad items to load
         ads_removed = driver.execute_script("""
             var ads = document.querySelectorAll('iframe, .ad, .advertisement, .adsbox');
             ads.forEach(ad => ad.remove());
