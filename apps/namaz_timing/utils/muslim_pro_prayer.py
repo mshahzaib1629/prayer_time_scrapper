@@ -200,7 +200,7 @@ def _select_month(driver: WebDriver, month_index, wait: WebDriverWait):
 
 def _remove_ads(driver: WebDriver, wait: WebDriverWait):
     try:
-        time.sleep(6)  # Wait for a few seconds to allow ad items to load
+        time.sleep(3)  # Wait for a few seconds to allow ad items to load
         ads_removed = driver.execute_script("""
             var ads = document.querySelectorAll('iframe, .ad, .advertisement, .adsbox');
             ads.forEach(ad => ad.remove());
