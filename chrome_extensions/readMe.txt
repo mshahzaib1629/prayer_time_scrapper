@@ -1,3 +1,0 @@
-
-
-Pre downloaded chrome extensions.
