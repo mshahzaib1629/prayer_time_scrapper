@@ -7,9 +7,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from datetime import datetime, timezone
-from apps.namaz_timing.utils.constants import months_grid, month_names
+from apps.namaz_timing.utils.constants import months_grid, user_agents
 import os
 import time
+import random
 
 def _find_project_root(current_path, marker_files=('.git', 'setup.py', 'requirements.txt')):
     while current_path != os.path.dirname(current_path):
@@ -25,13 +26,14 @@ def _setup_driver() -> WebDriver:
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
 
-    chrome_options.add_argument("--disable-gpu")
     # chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-notifications")
     chrome_options.add_argument("--disable-popup-blocking")
     # chrome_options.add_argument("--start-maximized")
     
-    chrome_options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    user_agent = random.choice(user_agents)
+    print("User Agent: ", user_agent)
+    chrome_options.add_argument(f"--user-agent={user_agent}")
 
     driver_file_name = os.getenv("CHROME_DRIVER_FILE_NAME")
     current_file_path = os.path.dirname(os.path.abspath(__file__))
